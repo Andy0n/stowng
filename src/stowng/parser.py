@@ -1,11 +1,39 @@
 # -*- coding: utf-8 -*-
 import argparse
-import os
+from typing import Dict, List, Tuple
 
 from . import __version__
 
 
-def set_verbosity(verbosity_arg):
+def set_verbosity(verbosity_arg: List[str] or None):
+    """
+    Set the verbosity level.
+
+    :param verbosity_arg: The verbosity argument.
+    :return: The verbosity level.
+
+    :raises ValueError: If the verbosity argument is invalid.
+
+    :Example:
+    >>> set_verbosity(['1'])
+    1
+    >>> set_verbosity(['v'])
+    2
+    >>> set_verbosity(['vv', 'v'])
+    5
+    >>> set_verbosity(['v', 'v', '1'])
+    5
+    >>> set_verbosity(['3', '1'])
+    4
+    >>> set_verbosity(None)
+    0
+    >>> set_verbosity([])
+    0
+    >>> set_verbosity(['a'])
+    Traceback (most recent call last):
+        ...
+    ValueError: invalid verbosity level: a
+    """
     verbosity = 0
 
     if verbosity_arg == None:
@@ -28,7 +56,13 @@ def set_verbosity(verbosity_arg):
     return verbosity
 
 
-def parse_options():
+def parse_options() -> Tuple[Dict, List, List]:
+    """
+    Parse command line options and arguments.
+
+    :return: A tuple containing the options dictionary, the list of packages to delete, and the list of packages to stow.
+    """
+
     parser = argparse.ArgumentParser(
         prog='StowNG',
         description='StowNG is GNU Stow in Python',
@@ -58,12 +92,36 @@ def parse_options():
     except ValueError as e:
         parser.error(e.args[0])
 
-    print(args)
-    print(verbosity)
-    print(os.path.relpath(args.dir, args.target))
+    stow = [pkg for pkgs in args.stow for pkg in pkgs] if args.stow else []
+    delete = [pkg for pkgs in args.delete for pkg in pkgs] if args.delete else []
+    restow = [pkg for pkgs in args.restow for pkg in pkgs] if args.restow else []
+    packages = [pkg for pkgs in args.packages for pkg in pkgs] if args.packages else []
 
-    return verbosity
+    options = {
+        'dir': args.dir,
+        'target': args.target,
+        'ignore': args.ignore,
+        'defer': args.defer,
+        'override': args.override,
+        'adopt': args.adopt,
+        'compat': args.compat,
+        'simulate': args.simulate,
+        'verbosity': verbosity,
+    }
+
+    print(args.verbose)
+    print(verbosity)
+
+    return options, delete + restow, packages + stow + restow
+
 
 def process_options():
-    parse_options()
+    """
+    Process command line options and arguments.
+    """
+    options, stow, delete = parse_options()
 
+
+if __name__ == "__main__":
+    import doctest
+    doctest.testmod()
