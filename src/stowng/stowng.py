@@ -2,6 +2,8 @@
 from . import __version__
 import argparse
 
+verbosity = 0
+
 def main():
     parser = argparse.ArgumentParser(
         prog='StowNG',
@@ -19,10 +21,32 @@ def main():
     parser.add_argument('-p', '--compat', action='store_true', help='use legacy algorithm for unstowing')
     parser.add_argument('-n', '--no', '--simulate', action='store_true', help='do not actually make any filesystem changes')
     parser.add_argument('-v', '--verbose', metavar='N', action='append', help='increase verbosity (levels are from 0 to 5; -v or --verbose adds 1; --verbose=N sets level)', nargs='?', const='1')
-    # TODO: -vv.. does not work: add all values in list, and count number of v's
     parser.add_argument('-V', '--version', action='version', version=f'%(prog)s {__version__}')
 
     args = parser.parse_args()
 
+    set_verbosity(parser, args.verbose)
+
     print('Hello, StowNG!')
     print(args)
+    print(verbosity)
+
+
+def set_verbosity(parser, verbosity_arg):
+    global verbosity
+    if verbosity_arg == None:
+        verbosity = 0
+    elif isinstance(verbosity_arg, list):
+        for arg in verbosity_arg:
+            if arg.isdigit():
+                verbosity += int(arg)
+            else:
+                verbosity += 1
+
+                for c in arg:
+                    if c == 'v':
+                        verbosity += 1
+                    else: 
+                        parser.error(f'invalid verbosity level: {arg}')
+    else:
+        verbosity = int(verbosity_arg)
