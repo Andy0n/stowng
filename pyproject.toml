@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "StowNG"
+version = "0.0.3"
+authors = [
+  { name="Andreas Himmler", email="andreas@himmler.me" },
+]
+description = "GNU Stow in Python"
+readme = "README.md"
+requires-python = ">=3.7"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    "Operating System :: OS Independent",
+]
+
+[project.scripts]
+stowng = "stowng.stowng:main"
+
+[project.urls]
+"Homepage" = "https://github.com/Andy0n/stowng"
+"Bug Tracker" = "https://github.com/Andy0n/stowng/issues"
