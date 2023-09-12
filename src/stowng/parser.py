@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import argparse
+import re
 from typing import Dict, List, Tuple
 
 from . import __version__
@@ -61,6 +62,9 @@ def parse_options() -> Tuple[Dict, List, List]:
     Parse command line options and arguments.
 
     :return: A tuple containing the options dictionary, the list of packages to delete, and the list of packages to stow.
+
+    .. todo:: Python vs Perl regexes
+    .. todo:: make 100% compatible with GNU Stow; e.g. -v before package
     """
 
     parser = argparse.ArgumentParser(
@@ -69,9 +73,9 @@ def parse_options() -> Tuple[Dict, List, List]:
     )
     parser.add_argument('-d', '--dir', metavar='DIR', action='store', help='set stow dir to DIR (default is current dir)', default='.')
     parser.add_argument('-t', '--target', metavar='DIR', action='store', help='set target to DIR (default is parent of stow dir)', default='..')
-    parser.add_argument('--ignore', metavar='REGEX', action='store', help='ignore files ending in this Perl regex')
-    parser.add_argument('--defer', metavar='REGEX', action='store', help='don\'t stow files beginning with this Perl regex if the file is already stowed to another package')
-    parser.add_argument('--override', metavar='REGEX', action='store', help='force stowing files beginning with this Perl regex if the file is already stowed to another package')
+    parser.add_argument('--ignore', metavar='REGEX', action='store', help='ignore files ending in this Python regex')
+    parser.add_argument('--defer', metavar='REGEX', action='store', help='don\'t stow files beginning with this Python regex if the file is already stowed to another package')
+    parser.add_argument('--override', metavar='REGEX', action='store', help='force stowing files beginning with this Python regex if the file is already stowed to another package')
     parser.add_argument('--adopt', action='store_true', help='(Use with care!) Import existing files into stow package from target. Please read docs before using.')
     parser.add_argument('-p', '--compat', action='store_true', help='use legacy algorithm for unstowing')
     parser.add_argument('-n', '--simulate', '--no', action='store_true', help='do not actually make any filesystem changes')
@@ -100,17 +104,14 @@ def parse_options() -> Tuple[Dict, List, List]:
     options = {
         'dir': args.dir,
         'target': args.target,
-        'ignore': args.ignore,
-        'defer': args.defer,
-        'override': args.override,
+        'ignore': re.compile(args.ignore) if args.ignore else None,
+        'defer': re.compile(args.defer) if args.defer else None,
+        'override': re.compile(args.override) if args.override else None,
         'adopt': args.adopt,
         'compat': args.compat,
         'simulate': args.simulate,
         'verbosity': verbosity,
     }
-
-    print(args.verbose)
-    print(verbosity)
 
     return options, delete + restow, packages + stow + restow
 
