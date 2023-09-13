@@ -1,12 +1,17 @@
 # -*- coding: utf-8 -*-
 import argparse
+import logging
 import re
-from typing import Dict, List, Tuple
+import os
+from typing import Dict, List, Optional, Tuple
 
 from . import __version__
 
 
-def set_verbosity(verbosity_arg: List[str] or None):
+CONFIG_FILES = ['~/.stowrc', '.stowrc']
+
+
+def set_verbosity(verbosity_arg: List[str] or str):
     """
     Set the verbosity level.
 
@@ -26,8 +31,6 @@ def set_verbosity(verbosity_arg: List[str] or None):
     5
     >>> set_verbosity(['3', '1'])
     4
-    >>> set_verbosity(None)
-    0
     >>> set_verbosity([])
     0
     >>> set_verbosity(['a'])
@@ -37,9 +40,7 @@ def set_verbosity(verbosity_arg: List[str] or None):
     """
     verbosity = 0
 
-    if verbosity_arg == None:
-        verbosity = 0
-    elif isinstance(verbosity_arg, list):
+    if isinstance(verbosity_arg, list):
         for arg in verbosity_arg:
             if arg.isdigit():
                 verbosity += int(arg)
@@ -57,22 +58,93 @@ def set_verbosity(verbosity_arg: List[str] or None):
     return verbosity
 
 
-def parse_options() -> Tuple[Dict, List, List]:
+def expand_filepath(filepath: str) -> str:
+    """
+    Expand a file path.
+
+    :param filepath: The file path to expand.
+    :return: The expanded file path.
+
+    :Example:
+    #>>> expand_filepath('~/test')
+    #'/home/username/test'
+    #>>> expand_filepath('$HOME/test')
+    #'/home/username/test'
+
+    .. todo:: testing
+    """
+    filepath = os.path.expanduser(filepath)
+    filepath = os.path.expandvars(filepath)
+    return filepath
+
+
+def sanitize_path(path: str) -> str:
+    """
+    Sanitize a path.
+
+    :param path: The path to sanitize.
+    :return: The sanitized path.
+
+    :Example:
+    >>> sanitize_path('/../test')
+    '/test'
+    >>> sanitize_path('/home/username/test')
+    '/home/username/test'
+    >>> sanitize_path('////etc/.././test')
+    '/test'
+
+    .. todo:: testing
+    """
+    path = expand_filepath(path)
+    path = os.path.normpath(path)
+    path = os.path.abspath(path)
+    return path
+
+def sanitize_path_options(options: Dict) -> Dict:
+    """
+    Sanitize the paths in the options dictionary.
+
+    :param options: The options dictionary.
+    :return: The sanitized options dictionary.
+
+    :Example:
+    >>> sanitize_path_options({'dir': '/../test', 'target': '/home/username/test'})
+    {'dir': '/test', 'target': '/home/username/test'}
+    >>> sanitize_path_options({'dir': '/home/username/test', 'target': None})
+    {'dir': '/home/username/test', 'target': '/home/username'}
+
+    .. todo:: testing
+    """
+    if options['dir']:
+        options['dir'] = sanitize_path(options['dir'])
+    else:
+        options['dir'] = os.getcwd()
+
+    if options['target']:
+        options['target'] = sanitize_path(options['target'])
+    else:
+        options['target'] = os.path.dirname(options['dir'])
+
+    return options
+
+def parse_options(arguments: Optional[List[str]] = None) -> Tuple[Dict, List, List]:
     """
     Parse command line options and arguments.
 
+    :param arguments: The command line arguments.
     :return: A tuple containing the options dictionary, the list of packages to delete, and the list of packages to stow.
 
     .. todo:: Python vs Perl regexes
     .. todo:: make 100% compatible with GNU Stow; e.g. -v before package
+    .. todo:: package names with slashes - better check for validity?
     """
 
     parser = argparse.ArgumentParser(
         prog='StowNG',
         description='StowNG is GNU Stow in Python',
     )
-    parser.add_argument('-d', '--dir', metavar='DIR', action='store', help='set stow dir to DIR (default is current dir)', default='.')
-    parser.add_argument('-t', '--target', metavar='DIR', action='store', help='set target to DIR (default is parent of stow dir)', default='..')
+    parser.add_argument('-d', '--dir', metavar='DIR', action='store', help='set stow dir to DIR (default is current dir)')
+    parser.add_argument('-t', '--target', metavar='DIR', action='store', help='set target to DIR (default is parent of stow dir)')
     parser.add_argument('--ignore', metavar='REGEX', action='store', help='ignore files ending in this Python regex')
     parser.add_argument('--defer', metavar='REGEX', action='store', help='don\'t stow files beginning with this Python regex if the file is already stowed to another package')
     parser.add_argument('--override', metavar='REGEX', action='store', help='force stowing files beginning with this Python regex if the file is already stowed to another package')
@@ -86,20 +158,34 @@ def parse_options() -> Tuple[Dict, List, List]:
     parser.add_argument('-R', '--restow', metavar='PACKAGE', action='append', help='restow (like stow -D followed by stow -S)', nargs='+')
     parser.add_argument('packages', metavar='PACKAGE', action='append', nargs='*')
 
-    args = parser.parse_args()
+    if arguments == None:
+        args = parser.parse_args()
 
-    if not (args.stow or args.delete or args.restow or any(args.packages)):
-        parser.error('no packages specified')
+        if not (args.stow or args.delete or args.restow or any(args.packages)):
+            parser.error('no packages to stow or unstow')
+    else:
+        args = parser.parse_args(arguments)
 
-    try:
-        verbosity = set_verbosity(args.verbose)
-    except ValueError as e:
-        parser.error(e.args[0])
+    if args.verbose:
+        try:
+            verbosity = set_verbosity(args.verbose)
+        except ValueError as e:
+            parser.error(e.args[0])
+    else:
+        verbosity = None
 
     stow = [pkg for pkgs in args.stow for pkg in pkgs] if args.stow else []
     delete = [pkg for pkgs in args.delete for pkg in pkgs] if args.delete else []
-    restow = [pkg for pkgs in args.restow for pkg in pkgs] if args.restow else []
-    packages = [pkg for pkgs in args.packages for pkg in pkgs] if args.packages else []
+
+    stow += [pkg for pkgs in args.packages for pkg in pkgs] if args.packages else []
+    stow += [pkg for pkgs in args.restow for pkg in pkgs] if args.restow else []
+    delete += [pkg for pkgs in args.restow for pkg in pkgs] if args.restow else []
+
+    for pkg in stow + delete:
+        pkg = pkg.rstrip('/')
+
+        if '/' in pkg: 
+            parser.error(f'slashes are not permited in package names: {pkg}')
 
     options = {
         'dir': args.dir,
@@ -113,16 +199,61 @@ def parse_options() -> Tuple[Dict, List, List]:
         'verbosity': verbosity,
     }
 
-    return options, delete + restow, packages + stow + restow
+    return options, delete, stow
+
+
+def get_config_file_options() -> Tuple[Dict, List, List]:
+    """
+    Get options from config files.
+
+    :return: A tuple containing the options dictionary, the list of packages to delete, and the list of packages to stow.
+    """
+    options = {}
+    stow = []
+    delete = []
+
+    for config in CONFIG_FILES:
+        config = expand_filepath(config)
+
+        if os.path.exists(config) and os.path.isfile(config):
+            with open(config, 'r') as f:
+                args = []
+
+                for line in f:
+                    args += line.strip().split(" ")
+
+                o, d, s = parse_options(args)
+
+                if not options:
+                    options.update(o)
+                else:
+                    options.update( (k,v) for k,v in o.items() if v )
+
+                stow += s
+                delete += d
+
+    return options, delete, stow
 
 
 def process_options():
     """
     Process command line options and arguments.
+    Preference: command line > local config file > user config file > defaults.
+        If boolean option is specified in any config file, it is set to True.
+
+    :return: A tuple containing the options dictionary, the list of packages to delete, and the list of packages to stow.
+
+    .. todo:: Check if this is 100% compatible with GNU Stow.
     """
-    options, stow, delete = parse_options()
+    options, delete, stow = parse_options()
+    rc_options, rc_delete, rc_stow = get_config_file_options()
 
+    for opt in options:
+        if not options[opt] and rc_options[opt]:
+            options[opt] = rc_options[opt]
 
-if __name__ == "__main__":
-    import doctest
-    doctest.testmod()
+    options = sanitize_path_options(options)
+    # no check, since already checked in parse_options()
+
+    return options, delete, stow
+
