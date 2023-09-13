@@ -81,6 +81,21 @@ class Stow:
             self.action_count += 1
 
 
+    def process_tasks(self) -> None:
+        """
+        Process the tasks.
+        """
+        log.debug(f'processing {len(self.tasks)} tasks')
+
+        for task in self.tasks:
+            if not task.skipped():
+                log.debug(f'processing task {task}')
+                task.process()
+                log.debug(f'processing task {task} done')
+
+        log.debug(f'processing {len(self.tasks)} tasks done')
+
+
     def _plan_stow_contents(self, package: str, path: str) -> None:
         """
         Plan the stow of the contents of a package.

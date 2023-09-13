@@ -31,7 +31,24 @@ def main():
     stow.plan_stow(pkgs_to_stow)
     os.chdir(cwd)
 
-    print('Hello, StowNG!')
+    if len(stow.conflicts) > 0:
+        log.warn(f'conflicts detected:')
+        for conflict in stow.conflicts:
+            log.warn(f'    {conflict["action"]}ing {conflict["package"]} would cause conflicts:')
+
+            for message in conflict['messages']:
+                log.warn(f'        {message}')
+
+        log.warn(f'aborting')
+        raise Exception('conflicts detected')
+    else:
+        if options['simulate']:
+            log.info(f'simulation complete, {stow.action_count} actions planned')
+            return
+        
+        os.chdir(options['target'])
+        stow.process_tasks()
+        os.chdir(cwd)
 
 if __name__ == '__main__':
     main()
