@@ -2,11 +2,13 @@ import os
 import shutil
 import logging
 
+from .utils import internal_error
+
 log = logging.getLogger(__name__)
 
 
 class Task:
-    def __init__(self, action, type_, link, path, source, dest) -> None:
+    def __init__(self, action, type_, link="", path="", source="", dest="") -> None:
         self.action = action
         self.type_ = type_
         self.link = link
@@ -38,6 +40,4 @@ class Task:
             if self.type_ == "file":
                 shutil.move(self.source, self.dest)
 
-        else:
-            log.error(f"invalid action {self.action}")
-            raise Exception(f"invalid action {self.action}")
+        internal_error(f"bad task action: {self.action}")

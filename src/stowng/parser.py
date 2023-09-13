@@ -162,19 +162,19 @@ def parse_options(arguments: Optional[List[str]] = None) -> Tuple[Dict, List, Li
     parser.add_argument(
         "--ignore",
         metavar="REGEX",
-        action="store",
+        action="append",
         help="ignore files ending in this Python regex",
     )
     parser.add_argument(
         "--defer",
         metavar="REGEX",
-        action="store",
+        action="append",
         help="don't stow files beginning with this Python regex if the file is already stowed to another package",
     )
     parser.add_argument(
         "--override",
         metavar="REGEX",
-        action="store",
+        action="append",
         help="force stowing files beginning with this Python regex if the file is already stowed to another package",
     )
     parser.add_argument(
@@ -262,9 +262,9 @@ def parse_options(arguments: Optional[List[str]] = None) -> Tuple[Dict, List, Li
     options = {
         "dir": args.dir,
         "target": args.target,
-        "ignore": re.compile(args.ignore) if args.ignore else None,
-        "defer": re.compile(args.defer) if args.defer else None,
-        "override": re.compile(args.override) if args.override else None,
+        "ignore": [re.compile(i) for i in args.ignore] if args.ignore else [],
+        "defer": [re.compile(d) for d in args.defer] if args.defer else [],
+        "override": [re.compile(o) for o in args.override] if args.override else [],
         "adopt": args.adopt,
         "compat": args.compat,
         "simulate": args.simulate,
