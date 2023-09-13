@@ -170,7 +170,12 @@ class Stow:
                 log.debug(f"  Adjusting: {node_target} => {adj_node_target}")
                 node_target = adj_node_target
 
-            self._stow_node(stow_path, package, node_target, os.path.normpath(os.path.join(source, node)))
+            self._stow_node(
+                stow_path,
+                package,
+                node_target,
+                os.path.normpath(os.path.join(source, node)),
+            )
 
     def _stow_node(
         self, stow_path: str, package: str, target: str, source: str
@@ -236,8 +241,12 @@ class Stow:
                     self._do_unlink(target)
                     self._do_link(source, target)
                 elif self._is_a_dir(
-                    os.path.normpath(os.path.join(os.path.dirname(target), existing_source))
-                ) and self._is_a_dir(os.path.normpath(os.path.join(os.path.dirname(target), source))):
+                    os.path.normpath(
+                        os.path.join(os.path.dirname(target), existing_source)
+                    )
+                ) and self._is_a_dir(
+                    os.path.normpath(os.path.join(os.path.dirname(target), source))
+                ):
                     log.debug(
                         f"--- Unfolding {target} which was already owned by {existing_package}"
                     )
@@ -250,7 +259,10 @@ class Stow:
                         os.path.normpath(os.path.join("..", existing_source)),
                     )
                     self._stow_contents(
-                        stow_path, package, target, os.path.normpath(os.path.join("..", source))
+                        stow_path,
+                        package,
+                        target,
+                        os.path.normpath(os.path.join("..", source)),
                     )
                 else:
                     self._conflict(
@@ -267,7 +279,10 @@ class Stow:
 
             if self._is_a_dir(target):
                 self._stow_contents(
-                    self.stow_path, package, target, os.path.normpath(os.path.join("..", source))
+                    self.stow_path,
+                    package,
+                    target,
+                    os.path.normpath(os.path.join("..", source)),
                 )
             else:
                 if self.adopt:
@@ -282,7 +297,10 @@ class Stow:
         elif self.no_folding and os.path.isdir(path) and not os.path.islink(path):
             self._do_mkdir(target)
             self._stow_contents(
-                self.stow_path, package, target, os.path.normpath(os.path.join("..", source))
+                self.stow_path,
+                package,
+                target,
+                os.path.normpath(os.path.join("..", source)),
             )
         else:
             self._do_link(source, target)
@@ -847,7 +865,11 @@ class Stow:
         """
         home = os.environ.get("HOME")
         path_regexp = os.path.normpath(os.path.join(dir, LOCAL_IGNORE_FILE))
-        segment_regexp = os.path.normpath(os.path.join(home, GLOBAL_IGNORE_FILE)) if home is not None else None
+        segment_regexp = (
+            os.path.normpath(os.path.join(home, GLOBAL_IGNORE_FILE))
+            if home is not None
+            else None
+        )
 
         for file in (path_regexp, segment_regexp):
             if file is not None and os.path.exists(file):
@@ -875,9 +897,11 @@ class Stow:
         regexps = self._get_ignore_regexps_from_filename(file)
 
         self.ignore_file_regexps[file] = regexps
-        return regexps 
+        return regexps
 
-    def _get_ignore_regexps_from_filename(self, filename: str) -> Tuple[re.Pattern, re.Pattern]:
+    def _get_ignore_regexps_from_filename(
+        self, filename: str
+    ) -> Tuple[re.Pattern, re.Pattern]:
         """
         Get ignore regexps from a filename.
 
@@ -914,7 +938,9 @@ class Stow:
 
         return regexps
 
-    def _compile_ignore_regexps(self, regexps: List[str]) -> Tuple[re.Pattern, re.Pattern]:
+    def _compile_ignore_regexps(
+        self, regexps: List[str]
+    ) -> Tuple[re.Pattern, re.Pattern]:
         """
         Compile ignore regexps.
 
@@ -933,8 +959,8 @@ class Stow:
 
         print(path_regexps)
         print(segment_regexps)
-        path_regexp = re.compile('|'.join(path_regexps))
-        segment_regexp = re.compile('|'.join(segment_regexps))
+        path_regexp = re.compile("|".join(path_regexps))
+        segment_regexp = re.compile("|".join(segment_regexps))
 
         return path_regexp, segment_regexp
 
@@ -944,6 +970,6 @@ class Stow:
 
         :returns: The default global ignore regexps.
         """
-        data = files('stowng.data').joinpath('default-ignore-list').read_text()
+        data = files("stowng.data").joinpath("default-ignore-list").read_text()
 
         return self._compile_ignore_regexps(self._get_ignore_regexps_from_data(data))
