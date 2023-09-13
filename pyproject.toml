@@ -23,7 +23,7 @@ dependencies = []
 dynamic = ["version"]
 
 [project.scripts]
-stowng = "stowng.stowng:main"
+stowng = "stowng.__main__:main"
 
 [project.urls]
 "Homepage" = "https://github.com/Andy0n/stowng"
