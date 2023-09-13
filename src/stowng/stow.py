@@ -4,6 +4,8 @@ import os
 import logging
 from typing import Dict, List
 
+from .task import Task
+
 log = logging.getLogger(__name__)
 
 class Stow:
