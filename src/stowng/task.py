@@ -1,5 +1,8 @@
 import os
 import shutil
+import logging
+
+log = logging.getLogger(__name__)
 
 class Task:
     def __init__(self, action, type_, link, path, source, dest) -> None:
@@ -33,4 +36,8 @@ class Task:
         elif self.action == 'move':
             if self.type_ == 'file':
                 shutil.move(self.source, self.dest)
+
+        else:
+            log.error(f'invalid action {self.action}')
+            raise Exception(f'invalid action {self.action}')
 
