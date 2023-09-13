@@ -157,7 +157,6 @@ class Stow:
         # TODO: check if dir is readable
 
         for node in os.listdir(path):
-            print(f"node is {node}")
             node_target = join(target, node)
 
             if self._ignore(stow_path, package, node_target):
@@ -951,8 +950,6 @@ class Stow:
             else:
                 segment_regexps.append(regexp)
 
-        print(path_regexps)
-        print(segment_regexps)
         path_regexp = re.compile("|".join(path_regexps))
         segment_regexp = re.compile("|".join(segment_regexps))
 
