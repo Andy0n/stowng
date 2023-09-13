@@ -7,7 +7,7 @@ from importlib.resources import files
 from typing import Dict, List, Optional, Tuple
 
 from .task import Task
-from .utils import internal_error
+from .utils import internal_error, join
 
 log = logging.getLogger(__name__)
 
@@ -65,7 +65,7 @@ class Stow:
         .. todo:: testing
         """
         for package in packages:
-            path = os.path.normpath(os.path.join(self.stow_path, package))
+            path = join(self.stow_path, package)
 
             if not os.path.isdir(path):
                 log.error(
@@ -93,7 +93,7 @@ class Stow:
         .. todo:: testing
         """
         for package in packages:
-            path = os.path.normpath(os.path.join(self.stow_path, package))
+            path = join(self.stow_path, package)
 
             if not os.path.isdir(path):
                 log.error(
@@ -136,7 +136,7 @@ class Stow:
         :param target: The target to stow.
         :param source: The source to stow.
         """
-        path = os.path.normpath(os.path.join(stow_path, package, target))
+        path = join(stow_path, package, target)
 
         if self._should_skip_target_which_is_stow_dir(target):
             return
@@ -158,7 +158,7 @@ class Stow:
 
         for node in os.listdir(path):
             print(f"node is {node}")
-            node_target = os.path.normpath(os.path.join(target, node))
+            node_target = join(target, node)
 
             if self._ignore(stow_path, package, node_target):
                 continue
@@ -174,7 +174,7 @@ class Stow:
                 stow_path,
                 package,
                 node_target,
-                os.path.normpath(os.path.join(source, node)),
+                join(source, node),
             )
 
     def _stow_node(
@@ -189,7 +189,7 @@ class Stow:
         :param source: The source to stow.
         """
 
-        path = os.path.normpath(os.path.join(stow_path, package, target))
+        path = join(stow_path, package, target)
 
         log.debug(f"Stowing {stow_path} / {package} / {target}")
         log.debug(f"  => {source}")
@@ -244,9 +244,7 @@ class Stow:
                     os.path.normpath(
                         os.path.join(os.path.dirname(target), existing_source)
                     )
-                ) and self._is_a_dir(
-                    os.path.normpath(os.path.join(os.path.dirname(target), source))
-                ):
+                ) and self._is_a_dir(join(os.path.dirname(target), source)):
                     log.debug(
                         f"--- Unfolding {target} which was already owned by {existing_package}"
                     )
@@ -256,13 +254,13 @@ class Stow:
                         existing_stow_path,
                         existing_package,
                         target,
-                        os.path.normpath(os.path.join("..", existing_source)),
+                        join("..", existing_source),
                     )
                     self._stow_contents(
                         stow_path,
                         package,
                         target,
-                        os.path.normpath(os.path.join("..", source)),
+                        join("..", source),
                     )
                 else:
                     self._conflict(
@@ -282,7 +280,7 @@ class Stow:
                     self.stow_path,
                     package,
                     target,
-                    os.path.normpath(os.path.join("..", source)),
+                    join("..", source),
                 )
             else:
                 if self.adopt:
@@ -300,7 +298,7 @@ class Stow:
                 self.stow_path,
                 package,
                 target,
-                os.path.normpath(os.path.join("..", source)),
+                join("..", source),
             )
         else:
             self._do_link(source, target)
@@ -429,7 +427,7 @@ class Stow:
         prefix = ""
 
         for part in path.split("/"):  # NOTE: Hopefully this is correct
-            prefix = os.path.normpath(os.path.join(prefix, part))
+            prefix = join(prefix, part)
             log.debug(f"    parent_link_scheduled_for_removal({path}): prefix {prefix}")
 
             if (
@@ -445,7 +443,7 @@ class Stow:
         return False
 
     def _find_stowed_path(self, target: str, source: str) -> Tuple[str, str, str]:
-        path = os.path.normpath(os.path.join(os.path.dirname(target), source))
+        path = join(os.path.dirname(target), source)
         log.debug(f"  is path {path} owned by stow?")
 
         dir = ""
@@ -492,7 +490,7 @@ class Stow:
 
     def _marked_stow_dir(self, target: str) -> bool:
         for f in [".stow", ".nonstow"]:
-            if os.path.isfile(os.path.normpath(os.path.join(target, f))):
+            if os.path.isfile(join(target, f)):
                 log.debug(f"{target} contained {f}")
                 return True
         return False
@@ -837,7 +835,7 @@ class Stow:
                 log.debug(f"  Ignoring path {target} due to --ignore={suffix}")
                 return True
 
-        package_dir = os.path.normpath(os.path.join(stow_path, package))
+        package_dir = join(stow_path, package)
         path_regexp, segment_regexp = self._get_ignore_regexps(package_dir)
         log.debug(f"    Ignore list regexp for paths: {path_regexp}")
         log.debug(f"    Ignore list regexp for segments: {segment_regexp}")
@@ -864,12 +862,8 @@ class Stow:
         :returns: The ignore regexps.
         """
         home = os.environ.get("HOME")
-        path_regexp = os.path.normpath(os.path.join(dir, LOCAL_IGNORE_FILE))
-        segment_regexp = (
-            os.path.normpath(os.path.join(home, GLOBAL_IGNORE_FILE))
-            if home is not None
-            else None
-        )
+        path_regexp = join(dir, LOCAL_IGNORE_FILE)
+        segment_regexp = join(home, GLOBAL_IGNORE_FILE) if home is not None else None
 
         for file in (path_regexp, segment_regexp):
             if file is not None and os.path.exists(file):
