@@ -3,12 +3,16 @@
 import os
 import re
 import logging
+from importlib.resources import files
 from typing import Dict, List, Optional, Tuple
 
 from .task import Task
 from .utils import internal_error
 
 log = logging.getLogger(__name__)
+
+LOCAL_IGNORE_FILE = ".stow-local-ignore"
+GLOBAL_IGNORE_FILE = ".stow-global-ignore"
 
 
 class Stow:
@@ -43,6 +47,9 @@ class Stow:
         self.dir_task_for = {}
         self.link_task_for = {}
 
+        self.ignore_file_regexps = {}
+        self.default_global_ignore_regexps = self._get_default_global_ignore_regexps()
+
         self.stow_path = os.path.relpath(self.dir, self.target)
         log.debug(f"stow dir is {self.dir}")
         log.debug(f"stow dir path relative to target {self.target} is {self.stow_path}")
@@ -58,7 +65,7 @@ class Stow:
         .. todo:: testing
         """
         for package in packages:
-            path = os.path.join(self.stow_path, package)
+            path = os.path.normpath(os.path.join(self.stow_path, package))
 
             if not os.path.isdir(path):
                 log.error(
@@ -86,7 +93,7 @@ class Stow:
         .. todo:: testing
         """
         for package in packages:
-            path = os.path.join(self.stow_path, package)
+            path = os.path.normpath(os.path.join(self.stow_path, package))
 
             if not os.path.isdir(path):
                 log.error(
@@ -129,14 +136,14 @@ class Stow:
         :param target: The target to stow.
         :param source: The source to stow.
         """
-        path = os.path.join(stow_path, package, target)
+        path = os.path.normpath(os.path.join(stow_path, package, target))
 
         if self._should_skip_target_which_is_stow_dir(target):
             return
 
         cwd = os.getcwd()
 
-        log.debug(f"Stowing contents of {path} (cwd is {cwd})")
+        log.debug(f"Stowing contents of {path} (cwd={cwd})")
         log.debug(f"  => {source}")
 
         if not os.path.isdir(path):
@@ -151,7 +158,7 @@ class Stow:
 
         for node in os.listdir(path):
             print(f"node is {node}")
-            node_target = os.path.join(target, node)
+            node_target = os.path.normpath(os.path.join(target, node))
 
             if self._ignore(stow_path, package, node_target):
                 continue
@@ -163,7 +170,7 @@ class Stow:
                 log.debug(f"  Adjusting: {node_target} => {adj_node_target}")
                 node_target = adj_node_target
 
-            self._stow_node(stow_path, package, node_target, os.path.join(source, node))
+            self._stow_node(stow_path, package, node_target, os.path.normpath(os.path.join(source, node)))
 
     def _stow_node(
         self, stow_path: str, package: str, target: str, source: str
@@ -177,7 +184,7 @@ class Stow:
         :param source: The source to stow.
         """
 
-        path = os.path.join(stow_path, package, target)
+        path = os.path.normpath(os.path.join(stow_path, package, target))
 
         log.debug(f"Stowing {stow_path} / {package} / {target}")
         log.debug(f"  => {source}")
@@ -229,8 +236,8 @@ class Stow:
                     self._do_unlink(target)
                     self._do_link(source, target)
                 elif self._is_a_dir(
-                    os.path.join(os.path.dirname(target), existing_source)
-                ) and self._is_a_dir(os.path.join(os.path.dirname(target), source)):
+                    os.path.normpath(os.path.join(os.path.dirname(target), existing_source))
+                ) and self._is_a_dir(os.path.normpath(os.path.join(os.path.dirname(target), source))):
                     log.debug(
                         f"--- Unfolding {target} which was already owned by {existing_package}"
                     )
@@ -240,10 +247,10 @@ class Stow:
                         existing_stow_path,
                         existing_package,
                         target,
-                        os.path.join("..", existing_source),
+                        os.path.normpath(os.path.join("..", existing_source)),
                     )
                     self._stow_contents(
-                        stow_path, package, target, os.path.join("..", source)
+                        stow_path, package, target, os.path.normpath(os.path.join("..", source))
                     )
                 else:
                     self._conflict(
@@ -260,7 +267,7 @@ class Stow:
 
             if self._is_a_dir(target):
                 self._stow_contents(
-                    self.stow_path, package, target, os.path.join("..", source)
+                    self.stow_path, package, target, os.path.normpath(os.path.join("..", source))
                 )
             else:
                 if self.adopt:
@@ -275,7 +282,7 @@ class Stow:
         elif self.no_folding and os.path.isdir(path) and not os.path.islink(path):
             self._do_mkdir(target)
             self._stow_contents(
-                self.stow_path, package, target, os.path.join("..", source)
+                self.stow_path, package, target, os.path.normpath(os.path.join("..", source))
             )
         else:
             self._do_link(source, target)
@@ -316,7 +323,7 @@ class Stow:
                 internal_error(f"link {path}: task exists with action {action}")
 
         elif os.path.islink(path):
-            log.debug(f"  read_a_lin({path}): real link")
+            log.debug(f"  read_a_link({path}): real link")
             target = os.readlink(path)
 
             if target is None or target == "":
@@ -404,7 +411,7 @@ class Stow:
         prefix = ""
 
         for part in path.split("/"):  # NOTE: Hopefully this is correct
-            prefix = os.path.join(prefix, part)
+            prefix = os.path.normpath(os.path.join(prefix, part))
             log.debug(f"    parent_link_scheduled_for_removal({path}): prefix {prefix}")
 
             if (
@@ -416,7 +423,7 @@ class Stow:
                 )
                 return True
 
-        log.debug(f"   parent_link_scheduled_for_removal({path}): returning false")
+        log.debug(f"    parent_link_scheduled_for_removal({path}): returning false")
         return False
 
     def _find_stowed_path(self, target: str, source: str) -> Tuple[str, str, str]:
@@ -467,7 +474,7 @@ class Stow:
 
     def _marked_stow_dir(self, target: str) -> bool:
         for f in [".stow", ".nonstow"]:
-            if os.path.isfile(os.path.join(target, f)):
+            if os.path.isfile(os.path.normpath(os.path.join(target, f))):
                 log.debug(f"{target} contained {f}")
                 return True
         return False
@@ -812,7 +819,7 @@ class Stow:
                 log.debug(f"  Ignoring path {target} due to --ignore={suffix}")
                 return True
 
-        package_dir = os.path.join(stow_path, package)
+        package_dir = os.path.normpath(os.path.join(stow_path, package))
         path_regexp, segment_regexp = self._get_ignore_regexps(package_dir)
         log.debug(f"    Ignore list regexp for paths: {path_regexp}")
         log.debug(f"    Ignore list regexp for segments: {segment_regexp}")
@@ -827,12 +834,10 @@ class Stow:
             log.debug(f"  Ignoring path segment {target}")
             return True
 
-        log.debug(f"  Not ignoring path {target}")
+        log.debug(f"  Not ignoring {target}")
         return False
 
-    def _get_ignore_regexps(
-        self, dir: str
-    ) -> Tuple[Optional[re.Pattern], Optional[re.Pattern]]:
+    def _get_ignore_regexps(self, dir: str) -> Tuple[re.Pattern, re.Pattern]:
         """
         Get the ignore regexps.
 
@@ -840,7 +845,105 @@ class Stow:
 
         :returns: The ignore regexps.
         """
-        path_regexp = None
-        segment_regexp = None
+        home = os.environ.get("HOME")
+        path_regexp = os.path.normpath(os.path.join(dir, LOCAL_IGNORE_FILE))
+        segment_regexp = os.path.normpath(os.path.join(home, GLOBAL_IGNORE_FILE)) if home is not None else None
+
+        for file in (path_regexp, segment_regexp):
+            if file is not None and os.path.exists(file):
+                log.debug(f"  Using ignore file: {file}")
+                return self._get_ignore_regexps_from_file(file)
+            else:
+                log.debug(f"  {file} didn't exist")
+
+        log.debug("  Using built-in ignore list")
+        return self.default_global_ignore_regexps
+
+    def _get_ignore_regexps_from_file(self, file: str) -> Tuple[re.Pattern, re.Pattern]:
+        """
+        Get ignore regexps from a file.
+
+        :param file: The file to read.
+
+        :returns: The ignore regexps.
+        """
+
+        if file in self.ignore_file_regexps:
+            log.debug(f"   Using memoized regexps from {file}")
+            return self.ignore_file_regexps[file]
+
+        regexps = self._get_ignore_regexps_from_filename(file)
+
+        self.ignore_file_regexps[file] = regexps
+        return regexps 
+
+    def _get_ignore_regexps_from_filename(self, filename: str) -> Tuple[re.Pattern, re.Pattern]:
+        """
+        Get ignore regexps from a filename.
+
+        :param filename: The filename to read.
+
+        :returns: The ignore regexps.
+
+        .. todo:: error handling
+        """
+        regexps = []
+
+        with open(filename, "r") as f:
+            regexps = self._get_ignore_regexps_from_data(f.read())
+
+        return self._compile_ignore_regexps(regexps)
+
+    def _get_ignore_regexps_from_data(self, data: str) -> List[str]:
+        """
+        Get ignore regexps from data.
+
+        :param data: The data to read.
+
+        :returns: The ignore regexps.
+        """
+        regexps = []
+
+        for line in data.splitlines():
+            line = line.strip()
+
+            if line == "" or line.startswith("#"):
+                continue
+
+            regexps.append(re.sub("\\s+#.+$", "", line).replace("\\#", "#").strip())
+
+        return regexps
+
+    def _compile_ignore_regexps(self, regexps: List[str]) -> Tuple[re.Pattern, re.Pattern]:
+        """
+        Compile ignore regexps.
+
+        :param regexps: The regexps to compile.
+
+        :returns: The compiled regexps.
+        """
+        path_regexps = []
+        segment_regexps = []
+
+        for regexp in regexps:
+            if "/" in regexp:
+                path_regexps.append(regexp)
+            else:
+                segment_regexps.append(regexp)
+
+        print(path_regexps)
+        print(segment_regexps)
+        path_regexp = re.compile('|'.join(path_regexps))
+        segment_regexp = re.compile('|'.join(segment_regexps))
 
         return path_regexp, segment_regexp
+
+    def _get_default_global_ignore_regexps(self) -> Tuple[re.Pattern, re.Pattern]:
+        """
+        Get the default global ignore regexps.
+
+        :returns: The default global ignore regexps.
+        """
+        data = files('stowng.data').joinpath('default-ignore-list').read_text()
+
+        return self._compile_ignore_regexps(self._get_ignore_regexps_from_data(data))

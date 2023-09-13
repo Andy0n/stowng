@@ -31,3 +31,9 @@ stowng = "stowng.__main__:main"
 
 [tool.setuptools.dynamic]
 version = {attr = "stowng.__version__"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+"stowng.data" = ["*"]
