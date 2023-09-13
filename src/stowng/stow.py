@@ -8,14 +8,15 @@ from .task import Task
 
 log = logging.getLogger(__name__)
 
+
 class Stow:
     def __init__(self, options: Dict, stow: List[str], unstow: List[str]) -> None:
         self.action_count = 0
-        self.dir = options['dir']
-        self.target = options['target']
-        self.verbosity = options['verbosity']
-        self.simulate = options['simulate']
-        self.compatibility = options['compat']
+        self.dir = options["dir"]
+        self.target = options["target"]
+        self.verbosity = options["verbosity"]
+        self.simulate = options["simulate"]
+        self.compatibility = options["compat"]
         self.stow = stow
         self.unstow = unstow
         self.conflicts = []
@@ -25,10 +26,9 @@ class Stow:
         self.dir_task_for = {}
         self.link_task_for = {}
         self.stow_path = os.path.relpath(self.dir, self.target)
-        log.debug(f'stow dir is {self.dir}')
-        log.debug(f'target dir is {self.target}')
-        log.debug(f'stow dir path relative to target {self.target} is {self.stow_path}')
-
+        log.debug(f"stow dir is {self.dir}")
+        log.debug(f"target dir is {self.target}")
+        log.debug(f"stow dir path relative to target {self.target} is {self.stow_path}")
 
     def plan_stow(self, stow: List[str]) -> None:
         """
@@ -44,16 +44,19 @@ class Stow:
             path = os.path.join(self.stow_path, package)
 
             if not os.path.isdir(path):
-                log.error(f'the stow directory {self.stow_path} does not contain a package named {package}')
-                raise Exception(f'the stow directory {self.stow_path} does not contain a package named {package}')
+                log.error(
+                    f"the stow directory {self.stow_path} does not contain a package named {package}"
+                )
+                raise Exception(
+                    f"the stow directory {self.stow_path} does not contain a package named {package}"
+                )
 
-            log.debug(f'planning stow of {package}')
+            log.debug(f"planning stow of {package}")
 
-            self._stow_contents(self.stow_path, package, '.', path)
+            self._stow_contents(self.stow_path, package, ".", path)
 
-            log.debug(f'planning stow of {package} done')
+            log.debug(f"planning stow of {package} done")
             self.action_count += 1
-
 
     def plan_unstow(self, unstow: List[str]) -> None:
         """
@@ -69,36 +72,40 @@ class Stow:
             path = os.path.join(self.stow_path, package)
 
             if not os.path.isdir(path):
-                log.error(f'the stow directory {self.stow_path} does not contain a package named {package}')
-                raise Exception(f'the stow directory {self.stow_path} does not contain a package named {package}')
+                log.error(
+                    f"the stow directory {self.stow_path} does not contain a package named {package}"
+                )
+                raise Exception(
+                    f"the stow directory {self.stow_path} does not contain a package named {package}"
+                )
 
-            log.debug(f'planning unstow of {package}')
+            log.debug(f"planning unstow of {package}")
 
             if self.compatibility:
-                self._unstow_contents_orig(self.stow_path, package, '.')
+                self._unstow_contents_orig(self.stow_path, package, ".")
             else:
-                self._unstow_contents(self.stow_path, package, '.')
+                self._unstow_contents(self.stow_path, package, ".")
 
-            log.debug(f'planning unstow of {package} done')
+            log.debug(f"planning unstow of {package} done")
             self.action_count += 1
-
 
     def process_tasks(self) -> None:
         """
         Process the tasks.
         """
-        log.debug(f'processing {len(self.tasks)} tasks')
+        log.debug(f"processing {len(self.tasks)} tasks")
 
         for task in self.tasks:
             if not task.skipped():
-                log.debug(f'processing task {task}')
+                log.debug(f"processing task {task}")
                 task.process()
-                log.debug(f'processing task {task} done')
+                log.debug(f"processing task {task} done")
 
-        log.debug(f'processing {len(self.tasks)} tasks done')
+        log.debug(f"processing {len(self.tasks)} tasks done")
 
-
-    def _stow_contents(self, stow_path: str, package: str, target: str, source: str) -> None:
+    def _stow_contents(
+        self, stow_path: str, package: str, target: str, source: str
+    ) -> None:
         """
         Plan the stow of the contents of a package.
 
@@ -114,23 +121,23 @@ class Stow:
 
         cwd = os.getcwd()
 
-        log.debug(f'stowing contents of {path} (cwd is {cwd})')
-        log.debug(f'    => {source}')
+        log.debug(f"stowing contents of {path} (cwd is {cwd})")
+        log.debug(f"    => {source}")
 
         if not os.path.isdir(path):
-            log.error(f'path {path} is not a directory')
-            raise Exception(f'path {path} is not a directory')
+            log.error(f"path {path} is not a directory")
+            raise Exception(f"path {path} is not a directory")
 
         if self._is_a_node(target):
-            log.error(f'target {target} is a node')
-            raise Exception(f'target {target} is a node')
+            log.error(f"target {target} is a node")
+            raise Exception(f"target {target} is a node")
 
         # TODO: check if dir is readable
 
         for node in os.listdir(path):
-            print(f'node is {node}')
+            print(f"node is {node}")
             node_target = os.path.join(target, node)
-            
+
             if self._ignore(stow_path, package, node_target):
                 continue
 
@@ -138,7 +145,9 @@ class Stow:
 
             self._stow_node(stow_path, package, node_target, os.path.join(source, node))
 
-    def _stow_node(self, stow_path: str, package: str, target: str, source: str) -> None:
+    def _stow_node(
+        self, stow_path: str, package: str, target: str, source: str
+    ) -> None:
         """
         Stow a node.
 
@@ -150,31 +159,32 @@ class Stow:
 
         path = os.path.join(stow_path, package, target)
 
-        log.debug(f'stowing {stow_path}/{package}/{target}')
-        log.debug(f'    => {source}')
+        log.debug(f"stowing {stow_path}/{package}/{target}")
+        log.debug(f"    => {source}")
 
         if os.path.islink(source):
-            second_source = self._read_a_link(source) 
+            second_source = self._read_a_link(source)
 
             if second_source is None:
-                log.error(f'link {source} does not exist, but should')
-                raise Exception(f'link {source} does not exist, but should')
+                log.error(f"link {source} does not exist, but should")
+                raise Exception(f"link {source} does not exist, but should")
 
-            if second_source.startswith('/'):
-                self.conflicts.append({
-                    'action': 'stow',
-                    'package': package,
-                    'messages': [
-                        f'{source} is an absolute symlink to {second_source}'
-                    ]
-                })
-                log.debug('absolute symlink cannot be unstowed')
+            if second_source.startswith("/"):
+                self.conflicts.append(
+                    {
+                        "action": "stow",
+                        "package": package,
+                        "messages": [
+                            f"{source} is an absolute symlink to {second_source}"
+                        ],
+                    }
+                )
+                log.debug("absolute symlink cannot be unstowed")
                 return
-        
+
         # if self._is_a_link(target):
 
-
-    def _unstow_contents(self, stow_path:str, package: str, target: str) -> None:
+    def _unstow_contents(self, stow_path: str, package: str, target: str) -> None:
         """
         Unstow the contents of a package.
 
@@ -182,15 +192,13 @@ class Stow:
         """
         pass
 
-
-    def _unstow_contents_orig(self, stow_path:str, package: str, target: str) -> None:
+    def _unstow_contents_orig(self, stow_path: str, package: str, target: str) -> None:
         """
         Unstow the contents of a package.
 
         :param package: The name of the package to unstow.
         """
         pass
-
 
     def _read_a_link(self, path: str) -> Optional[str]:
         """
@@ -200,23 +208,21 @@ class Stow:
 
         :returns: The link target.
         """
-        
+
         action = self._link_task_action(path)
 
         if action is not None:
-            log.debug(f'link {path}: task exists with action {action}')
+            log.debug(f"link {path}: task exists with action {action}")
 
-            if action == 'create':
+            if action == "create":
                 return self.link_task_for[path].source
-            elif action == 'remove':
-                raise Exception(f'link {path}: task exists with action {action}')
+            elif action == "remove":
+                raise Exception(f"link {path}: task exists with action {action}")
 
         elif os.path.islink(path):
-            log.debug(f'link {path}: link exists')
+            log.debug(f"link {path}: link exists")
             return os.readlink(path)
 
-
-    
     def _link_task_action(self, path) -> Optional[str]:
         """
         Determine the action for a link task.
@@ -226,22 +232,17 @@ class Stow:
         :returns: The action.
         """
         if path not in self.link_task_for:
-            log.debug(f'link {path}: no task exists')
+            log.debug(f"link {path}: no task exists")
             return None
 
-        action = self.link_task_for[path].action 
+        action = self.link_task_for[path].action
 
-        if action not in ['create', 'remove']:
-            log.error(f'link {path}: invalid action {action}')
-            raise Exception(f'link {path}: invalid action {action}')
+        if action not in ["create", "remove"]:
+            log.error(f"link {path}: invalid action {action}")
+            raise Exception(f"link {path}: invalid action {action}")
 
-        log.debug(f'link {path}: task exists with action {action}')
+        log.debug(f"link {path}: task exists with action {action}")
         return action
-
-
-
-
-
 
     # TODO: not implemented yet:
     def _should_skip_target_which_is_stow_dir(self, target: str) -> bool:
@@ -275,6 +276,3 @@ class Stow:
         :returns: True if the target should be ignored, False otherwise.
         """
         return False
-
-
-

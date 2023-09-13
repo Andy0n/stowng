@@ -8,7 +8,7 @@ from typing import Dict, List, Optional, Tuple
 from . import __version__
 
 
-CONFIG_FILES = ['~/.stowrc', '.stowrc']
+CONFIG_FILES = ["~/.stowrc", ".stowrc"]
 
 
 def set_verbosity(verbosity_arg: List[str] or str):
@@ -48,10 +48,10 @@ def set_verbosity(verbosity_arg: List[str] or str):
                 verbosity += 1
 
                 for c in arg:
-                    if c == 'v':
+                    if c == "v":
                         verbosity += 1
-                    else: 
-                        raise ValueError(f'invalid verbosity level: {arg}')    
+                    else:
+                        raise ValueError(f"invalid verbosity level: {arg}")
     else:
         verbosity = int(verbosity_arg)
 
@@ -100,6 +100,7 @@ def sanitize_path(path: str) -> str:
     path = os.path.abspath(path)
     return path
 
+
 def sanitize_path_options(options: Dict) -> Dict:
     """
     Sanitize the paths in the options dictionary.
@@ -115,17 +116,18 @@ def sanitize_path_options(options: Dict) -> Dict:
 
     .. todo:: testing
     """
-    if options['dir']:
-        options['dir'] = sanitize_path(options['dir'])
+    if options["dir"]:
+        options["dir"] = sanitize_path(options["dir"])
     else:
-        options['dir'] = os.getcwd()
+        options["dir"] = os.getcwd()
 
-    if options['target']:
-        options['target'] = sanitize_path(options['target'])
+    if options["target"]:
+        options["target"] = sanitize_path(options["target"])
     else:
-        options['target'] = os.path.dirname(options['dir'])
+        options["target"] = os.path.dirname(options["dir"])
 
     return options
+
 
 def parse_options(arguments: Optional[List[str]] = None) -> Tuple[Dict, List, List]:
     """
@@ -140,29 +142,99 @@ def parse_options(arguments: Optional[List[str]] = None) -> Tuple[Dict, List, Li
     """
 
     parser = argparse.ArgumentParser(
-        prog='StowNG',
-        description='StowNG is GNU Stow in Python',
+        prog="StowNG",
+        description="StowNG is GNU Stow in Python",
     )
-    parser.add_argument('-d', '--dir', metavar='DIR', action='store', help='set stow dir to DIR (default is current dir)')
-    parser.add_argument('-t', '--target', metavar='DIR', action='store', help='set target to DIR (default is parent of stow dir)')
-    parser.add_argument('--ignore', metavar='REGEX', action='store', help='ignore files ending in this Python regex')
-    parser.add_argument('--defer', metavar='REGEX', action='store', help='don\'t stow files beginning with this Python regex if the file is already stowed to another package')
-    parser.add_argument('--override', metavar='REGEX', action='store', help='force stowing files beginning with this Python regex if the file is already stowed to another package')
-    parser.add_argument('--adopt', action='store_true', help='(Use with care!) Import existing files into stow package from target. Please read docs before using.')
-    parser.add_argument('-p', '--compat', action='store_true', help='use legacy algorithm for unstowing')
-    parser.add_argument('-n', '--simulate', '--no', action='store_true', help='do not actually make any filesystem changes')
-    parser.add_argument('-v', '--verbose', metavar='N', action='append', help='increase verbosity (levels are from 0 to 5; -v or --verbose adds 1; --verbose=N sets level)', nargs='?', const='1')
-    parser.add_argument('-V', '--version', action='version', version=f'%(prog)s {__version__}')
-    parser.add_argument('-S', '--stow', metavar='PACKAGE', action='append', help='stow the package names that follow this option', nargs='+')
-    parser.add_argument('-D', '--delete', metavar='PACKAGE', action='append', help='unstow the package names that follow this option', nargs='+')
-    parser.add_argument('-R', '--restow', metavar='PACKAGE', action='append', help='restow (like stow -D followed by stow -S)', nargs='+')
-    parser.add_argument('packages', metavar='PACKAGE', action='append', nargs='*')
+    parser.add_argument(
+        "-d",
+        "--dir",
+        metavar="DIR",
+        action="store",
+        help="set stow dir to DIR (default is current dir)",
+    )
+    parser.add_argument(
+        "-t",
+        "--target",
+        metavar="DIR",
+        action="store",
+        help="set target to DIR (default is parent of stow dir)",
+    )
+    parser.add_argument(
+        "--ignore",
+        metavar="REGEX",
+        action="store",
+        help="ignore files ending in this Python regex",
+    )
+    parser.add_argument(
+        "--defer",
+        metavar="REGEX",
+        action="store",
+        help="don't stow files beginning with this Python regex if the file is already stowed to another package",
+    )
+    parser.add_argument(
+        "--override",
+        metavar="REGEX",
+        action="store",
+        help="force stowing files beginning with this Python regex if the file is already stowed to another package",
+    )
+    parser.add_argument(
+        "--adopt",
+        action="store_true",
+        help="(Use with care!) Import existing files into stow package from target. Please read docs before using.",
+    )
+    parser.add_argument(
+        "-p", "--compat", action="store_true", help="use legacy algorithm for unstowing"
+    )
+    parser.add_argument(
+        "-n",
+        "--simulate",
+        "--no",
+        action="store_true",
+        help="do not actually make any filesystem changes",
+    )
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        metavar="N",
+        action="append",
+        help="increase verbosity (levels are from 0 to 5; -v or --verbose adds 1; --verbose=N sets level)",
+        nargs="?",
+        const="1",
+    )
+    parser.add_argument(
+        "-V", "--version", action="version", version=f"%(prog)s {__version__}"
+    )
+    parser.add_argument(
+        "-S",
+        "--stow",
+        metavar="PACKAGE",
+        action="append",
+        help="stow the package names that follow this option",
+        nargs="+",
+    )
+    parser.add_argument(
+        "-D",
+        "--delete",
+        metavar="PACKAGE",
+        action="append",
+        help="unstow the package names that follow this option",
+        nargs="+",
+    )
+    parser.add_argument(
+        "-R",
+        "--restow",
+        metavar="PACKAGE",
+        action="append",
+        help="restow (like stow -D followed by stow -S)",
+        nargs="+",
+    )
+    parser.add_argument("packages", metavar="PACKAGE", action="append", nargs="*")
 
     if arguments == None:
         args = parser.parse_args()
 
         if not (args.stow or args.delete or args.restow or any(args.packages)):
-            parser.error('no packages to stow or unstow')
+            parser.error("no packages to stow or unstow")
     else:
         args = parser.parse_args(arguments)
 
@@ -182,21 +254,21 @@ def parse_options(arguments: Optional[List[str]] = None) -> Tuple[Dict, List, Li
     delete += [pkg for pkgs in args.restow for pkg in pkgs] if args.restow else []
 
     for pkg in stow + delete:
-        pkg = pkg.rstrip('/')
+        pkg = pkg.rstrip("/")
 
-        if '/' in pkg: 
-            parser.error(f'slashes are not permited in package names: {pkg}')
+        if "/" in pkg:
+            parser.error(f"slashes are not permited in package names: {pkg}")
 
     options = {
-        'dir': args.dir,
-        'target': args.target,
-        'ignore': re.compile(args.ignore) if args.ignore else None,
-        'defer': re.compile(args.defer) if args.defer else None,
-        'override': re.compile(args.override) if args.override else None,
-        'adopt': args.adopt,
-        'compat': args.compat,
-        'simulate': args.simulate,
-        'verbosity': verbosity,
+        "dir": args.dir,
+        "target": args.target,
+        "ignore": re.compile(args.ignore) if args.ignore else None,
+        "defer": re.compile(args.defer) if args.defer else None,
+        "override": re.compile(args.override) if args.override else None,
+        "adopt": args.adopt,
+        "compat": args.compat,
+        "simulate": args.simulate,
+        "verbosity": verbosity,
     }
 
     return options, delete, stow
@@ -216,7 +288,7 @@ def get_config_file_options() -> Tuple[Dict, List, List]:
         config = expand_filepath(config)
 
         if os.path.exists(config) and os.path.isfile(config):
-            with open(config, 'r') as f:
+            with open(config, "r") as f:
                 args = []
 
                 for line in f:
@@ -227,7 +299,7 @@ def get_config_file_options() -> Tuple[Dict, List, List]:
                 if not options:
                     options.update(o)
                 else:
-                    options.update( (k,v) for k,v in o.items() if v )
+                    options.update((k, v) for k, v in o.items() if v)
 
                 stow += s
                 delete += d
@@ -256,4 +328,3 @@ def process_options():
     # no check, since already checked in parse_options()
 
     return options, delete, stow
-

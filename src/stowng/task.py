@@ -4,6 +4,7 @@ import logging
 
 log = logging.getLogger(__name__)
 
+
 class Task:
     def __init__(self, action, type_, link, path, source, dest) -> None:
         self.action = action
@@ -21,23 +22,22 @@ class Task:
         .. todo:: error handling
         .. todo:: testing
         """
-        if self.action == 'create':
-            if self.type_ == 'dir':
+        if self.action == "create":
+            if self.type_ == "dir":
                 os.mkdir(self.path)
-            elif self.type_ == 'link':
+            elif self.type_ == "link":
                 os.symlink(self.source, self.path)
 
-        elif self.action == 'remove':
-            if self.type_ == 'dir':
+        elif self.action == "remove":
+            if self.type_ == "dir":
                 os.rmdir(self.path)
-            elif self.type_ == 'link':
+            elif self.type_ == "link":
                 os.unlink(self.path)
 
-        elif self.action == 'move':
-            if self.type_ == 'file':
+        elif self.action == "move":
+            if self.type_ == "file":
                 shutil.move(self.source, self.dest)
 
         else:
-            log.error(f'invalid action {self.action}')
-            raise Exception(f'invalid action {self.action}')
-
+            log.error(f"invalid action {self.action}")
+            raise Exception(f"invalid action {self.action}")
