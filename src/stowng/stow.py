@@ -163,9 +163,7 @@ class Stow:
                 continue
 
             if self.dotfiles:
-                adj_node_target = (
-                    node_target  # self._adjust_dotfile(node_target) # TODO: implement
-                )
+                adj_node_target = self._adjust_dotfile(node_target)
                 log.debug(f"  Adjusting: {node_target} => {adj_node_target}")
                 node_target = adj_node_target
 
@@ -308,7 +306,120 @@ class Stow:
 
         :param package: The name of the package to unstow.
         """
-        pass
+        path = join(stow_path, package, target)
+
+        if self._should_skip_target_which_is_stow_dir(target):
+            return
+
+        cwd = os.getcwd()
+        msg = f"Unstowing from {target} (cwd={cwd}, stow dir={stow_path})"  # NOTE: GNU Stow: uses self.stow_path here
+        msg = msg.replace(f"{os.environ['HOME']}/", "~/")
+
+        log.debug(msg)
+        log.debug(f"  source path is {path}")
+
+        if not os.path.isdir(path):
+            log.error(f"unstow_contents() called with non-directory path: {path}")
+            raise Exception(f"unstow_contents() called with non-directory path: {path}")
+
+        if not self._is_a_node(target):
+            log.error(f"unstow_contents() called with invalid target: {path}")
+            raise Exception(f"unstow_contents() called with invalid target: {path}")
+
+        # TODO: check if dir is readable
+
+        for node in os.listdir(path):
+            node_target = join(target, node)
+
+            if self._ignore(stow_path, package, node_target):
+                continue
+
+            if self.dotfiles:
+                adj_node_target = self._adjust_dotfile(node_target)
+                log.debug(f"  Adjusting: {node_target} => {adj_node_target}")
+                node_target = adj_node_target
+
+            self._unstow_node(
+                stow_path,
+                package,
+                node_target,
+            )
+
+        if self._is_a_dir(target):
+            self._cleanup_invalid_links(target)
+
+    def _unstow_node(self, stow_path: str, package: str, target: str) -> None:
+        """
+        Unstow a node.
+
+        :param stow_path: The path to the stow directory.
+        :param package: The name of the package.
+        :param target: The target to unstow.
+        """
+        path = join(stow_path, package, target)
+
+        log.debug(f"Unstowing {path}")
+        log.debug(f"  target is {target}")
+
+        if self._is_a_link(target):
+            log.debug(f"  Evaluate existing link: {target}")
+
+            existing_source = self._read_a_link(target)
+
+            if existing_source is None:
+                log.error(f"Could not read link: {target}")
+                raise Exception(f"Could not read link: {target}")
+
+            if existing_source.startswith("/"):
+                log.warn(f"Ignoring an absolute symlink: {target} => {existing_source}")
+                return
+
+            (
+                existing_path,
+                existing_stow_path,
+                existing_package,
+            ) = self._find_stowed_path(target, existing_source)
+
+            if existing_path == "":
+                self._conflict(
+                    "unstow",
+                    package,
+                    f"existing target is not owned by stow: {target} => {existing_source}",
+                )
+                return
+
+            if os.path.exists(existing_path):
+                if self.dotfiles:
+                    existing_path = self._adjust_dotfile(existing_path)
+
+                if existing_path == path:
+                    self._do_unlink(target)
+            else:
+                log.debug(f"--- removing invalid link into a stow directory: {path}")
+                self._do_unlink(target)
+        elif os.path.exists(target):
+            log.debug(f"  Evaluate existing node: {target}")
+
+            if os.path.isdir(target):
+                self._unstow_contents(
+                    self.stow_path,
+                    package,
+                    target,
+                )
+
+                parent = self._foldable(target)
+
+                if parent is not None:
+                    self._fold_tree(target, parent)
+
+            else:
+                self._conflict(
+                    "unstow",
+                    package,
+                    f"existing target is neither a link nor a directory: {target}",
+                )
+        else:
+            log.debug(f"{target} did not exist to be unstowed")
 
     def _unstow_contents_orig(self, stow_path: str, package: str, target: str) -> None:
         """
@@ -316,7 +427,58 @@ class Stow:
 
         :param package: The name of the package to unstow.
         """
-        pass
+        path = join(stow_path, package, target)
+
+        log.debug(f"Unstowing {target} (compat mode)")
+        log.debug(f"  source path is {path}")
+
+        if self._is_a_link(target):
+            log.debug(f"  Evaluate existing link: {target}")
+
+            existing_source = self._read_a_link(target)
+
+            if existing_source is None:
+                log.error(f"Could not read link: {target}")
+                raise Exception(f"Could not read link: {target}")
+
+            (
+                existing_path,
+                existing_stow_path,
+                existing_package,
+            ) = self._find_stowed_path(target, existing_source)
+
+            if existing_path == "":
+                return
+
+            if os.path.exists(existing_path):
+                if existing_path == path:
+                    self._do_unlink(target)
+                elif self._override(target):
+                    log.debug(f"--- overriding installation of: {target}")
+                    self._do_unlink(target)
+            else:
+                log.debug(f"--- removing invalid link into stow directory: {path}")
+                self._do_unlink(target)
+        elif os.path.isdir(target):
+            self._unstow_contents_orig(
+                stow_path,
+                package,
+                target,
+            )
+
+            parent = self._foldable(target)
+
+            if parent is not None:
+                self._fold_tree(target, parent)
+
+        elif os.path.exists(target):
+            self._conflict(
+                "unstow",
+                package,
+                f"existing target is neither a link nor a directory: {target}",
+            )
+        else:
+            log.debug(f"{target} did not exist to be unstowed")
 
     def _read_a_link(self, path: str) -> Optional[str]:
         """
@@ -813,6 +975,143 @@ class Stow:
         self.tasks.append(task)
         # FIXME: GNU Stow: do we need this for anything?
         # self.mv_task_for[src] = task
+
+    def _cleanup_invalid_links(self, dir: str) -> None:
+        """
+        Cleanup invalid links.
+
+        :param dir: The directory to clean up.
+        """
+        if not os.path.isdir(dir):
+            log.error(f"cleanup_invalid_links() called with a non-directory: {dir}")
+            raise Exception(
+                f"cleanup_invalid_links() called with a non-directory: {dir}"
+            )
+
+        # TODO: check if dir is readable
+
+        for node in os.listdir(dir):
+            node_path = join(dir, node)
+
+            if os.path.islink(node_path) and not node_path in self.link_task_for:
+                source = self._read_a_link(node_path)
+
+                if source is None:
+                    log.error(f"Could not read link: {node_path}")
+                    raise Exception(f"Could not read link: {node_path}")
+
+                if not os.path.exists(
+                    join(dir, source)
+                ) and self._path_owned_by_package(node_path, source):
+                    log.debug(
+                        f"--- removing stale link: {node_path} => {join(dir, source)}"
+                    )
+                    self._do_unlink(node_path)
+
+    def _path_owned_by_package(self, target: str, source: str) -> bool:
+        """
+        Determine if a path is owned by a package.
+
+        :param target: The target to check.
+        :param source: The source to check.
+
+        :returns: True if the path is owned by a package, False otherwise.
+        """
+        (
+            existing_path,
+            existing_stow_path,
+            existing_package,
+        ) = self._find_stowed_path(target, source)
+
+        if existing_path == "":
+            return False
+
+        return True
+
+    def _foldable(self, target: str) -> Optional[str]:
+        """
+        Determine if a target is foldable.
+
+        :param target: The target to check.
+
+        :returns: The parent if the target is foldable, None otherwise.
+        """
+        log.debug(f"--- Is {target} foldable?")
+
+        if self.no_folding:
+            log.debug("--- no because --no-folding enabled")
+            return None
+
+        # TODO: check if target is readable
+
+        parent = ""
+
+        for node in os.listdir(target):
+            path = join(target, node)
+
+            if self._is_a_node(path):
+                continue
+
+            if self._is_a_link(path):
+                return None
+
+            source = self._read_a_link(path)
+
+            if source is None:
+                log.error(f"Could not read link: {path}")
+                raise Exception(f"Could not read link: {path}")
+
+            if parent == "":
+                parent = os.path.dirname(source)
+            elif parent != os.path.dirname(source):
+                return None
+        if parent == "":
+            return None
+
+        parent = re.sub("^\\.\\.", "", parent)
+
+        if self._path_owned_by_package(target, parent):
+            log.debug(f"--- {target} is foldable")
+            return parent
+
+        return None
+
+    def _fold_tree(self, target: str, source: str) -> None:
+        """
+        Fold a tree.
+
+        :param target: The target to fold.
+        :param source: The source to fold.
+        """
+        log.debug(f"--- Folding tree: {target} => {source}")
+
+        # TODO: check if target is readable
+
+        for node in os.listdir(target):
+            if not self._is_a_node(join(target, node)):
+                continue
+            self._do_unlink(join(target, node))
+
+        self._do_rmdir(target)
+        self._do_link(source, target)
+
+    def _adjust_dotfile(self, target: str) -> str:
+        """
+        Adjust a dotfile.
+
+        :param target: The target to adjust.
+
+        :returns: The adjusted target.
+        """
+        result = []
+
+        for part in target.split("/"):
+            if part not in ("dot-", "dot-."):
+                part = re.sub("^dot-", ".", part)
+
+            result.append(part)
+
+        return "/".join(result)
 
     def _ignore(self, stow_path: str, package: str, target: str) -> bool:
         """
