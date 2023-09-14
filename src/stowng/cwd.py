@@ -3,8 +3,10 @@ import logging
 
 log = logging.getLogger(__name__)
 
+
 def change_cwd(path: str):
     return CurrentWorkingDirectory(path)
+
 
 class CurrentWorkingDirectory:
     """
@@ -24,4 +26,3 @@ class CurrentWorkingDirectory:
     def __exit__(self, type, value, tb):
         os.chdir(self.old_cwd)
         log.debug(f"cwd restored to {os.getcwd()}")
-

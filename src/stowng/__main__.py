@@ -24,19 +24,23 @@ def main():
     # for key, value in options.items():
     #     log.debug(f"    {key}: {value}")
 
-    stow = Farmer(options, pkgs_to_stow, pkgs_to_delete) 
+    farmer = Farmer(options)
 
     with change_cwd(options["target"]):
-        stow.plan_unstow(pkgs_to_delete)
-        stow.plan_stow(pkgs_to_stow)
+        farmer.plan_unstow(pkgs_to_delete)
+        farmer.plan_stow(pkgs_to_stow)
 
-        if len(stow.conflicts) > 0:
+        conflicts = farmer.get_conflicts()
+
+        if len(conflicts) > 0:
             for action in ("stow", "unstow"):
-                if action in stow.conflicts:
-                    for package in stow.conflicts[action]:
-                        log.warn(f"WARNING! {action}ing {package} would cause conflicts:")
+                if action in conflicts:
+                    for package in conflicts[action]:
+                        log.warn(
+                            f"WARNING! {action}ing {package} would cause conflicts:"
+                        )
 
-                        for message in stow.conflicts[action][package]:
+                        for message in conflicts[action][package]:
                             log.warn(f"  * {message}")
 
             log.warn("All operations aborted.")
@@ -46,7 +50,7 @@ def main():
                 log.info(f"WARNING: in simulation mode so not modifying filesystem.")
                 return
 
-            stow.process_tasks()
+            farmer.process_tasks()
 
 
 if __name__ == "__main__":

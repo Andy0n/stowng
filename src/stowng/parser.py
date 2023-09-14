@@ -182,6 +182,26 @@ def parse_options(arguments: Optional[List[str]] = None) -> Tuple[Dict, List, Li
         help="(Use with care!) Import existing files into stow package from target. Please read docs before using.",
     )
     parser.add_argument(
+        "--no-folding",
+        action="store_true",
+        help="",
+    )
+    parser.add_argument(
+        "--dotfiles",
+        action="store_true",
+        help="",
+    )
+    parser.add_argument(
+        "--paranoid",
+        action="store_true",
+        help="",
+    )
+    parser.add_argument(
+        "--test_mode",
+        action="store_true",
+        help="",
+    )
+    parser.add_argument(
         "-p", "--compat", action="store_true", help="use legacy algorithm for unstowing"
     )
     parser.add_argument(
@@ -268,6 +288,10 @@ def parse_options(arguments: Optional[List[str]] = None) -> Tuple[Dict, List, Li
         "compat": args.compat,
         "simulate": args.simulate,
         "verbosity": verbosity,
+        "dotfiles": args.dotfiles,
+        "no_folding": args.no_folding,
+        "paranoid": args.paranoid,
+        "test_mode": args.test_mode,
     }
 
     return options, delete, stow
@@ -317,7 +341,7 @@ def process_options():
     .. todo:: Check if this is 100% compatible with GNU Stow.
     """
     options, delete, stow = parse_options()
-    rc_options, rc_delete, rc_stow = get_config_file_options()
+    rc_options, _, _ = get_config_file_options()
 
     for opt in options:
         if not options[opt] and rc_options[opt]:

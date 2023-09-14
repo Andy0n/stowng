@@ -1,5 +1,6 @@
 import logging
 import os
+import re
 
 log = logging.getLogger(__name__)
 
@@ -22,3 +23,22 @@ def join(*args: str) -> str:
     :return: The joined arguments.
     """
     return os.path.normpath(os.path.join(*args))
+
+
+def adjust_dotfile(target: str) -> str:
+    """
+    Adjust a dotfile.
+
+    :param target: The target to adjust.
+
+    :returns: The adjusted target.
+    """
+    result = []
+
+    for part in target.split("/"):
+        if part not in ("dot-", "dot-."):
+            part = re.sub("^dot-", ".", part)
+
+        result.append(part)
+
+    return "/".join(result)
