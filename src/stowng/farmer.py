@@ -15,7 +15,7 @@ LOCAL_IGNORE_FILE = ".stow-local-ignore"
 GLOBAL_IGNORE_FILE = ".stow-global-ignore"
 
 
-class Stow:
+class Farmer:
     def __init__(self, options: Dict, stow: List[str], unstow: List[str]) -> None:
         self.action_count = 0
 

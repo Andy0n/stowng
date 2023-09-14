@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 import argparse
-import logging
 import re
 import os
 from typing import Dict, List, Optional, Tuple

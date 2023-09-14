@@ -1,8 +1,7 @@
 import logging
-import os
 
 from .parser import process_options
-from .stow import Stow
+from .farmer import Farmer
 from .cwd import change_cwd
 
 logging.basicConfig(level=logging.INFO, format="%(message)s")
@@ -25,7 +24,7 @@ def main():
     # for key, value in options.items():
     #     log.debug(f"    {key}: {value}")
 
-    stow = Stow(options, pkgs_to_stow, pkgs_to_delete) 
+    stow = Farmer(options, pkgs_to_stow, pkgs_to_delete) 
 
     with change_cwd(options["target"]):
         stow.plan_unstow(pkgs_to_delete)
