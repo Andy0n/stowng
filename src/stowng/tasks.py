@@ -34,6 +34,22 @@ class Tasks:
         """
         return self.conflicts
 
+    def get_conflict_count(self) -> int:
+        """
+        Get the conflict count.
+
+        :returns: The conflict count.
+        """
+        return self.conflict_count
+
+    def get_task_count(self) -> int:
+        """
+        Get the task count.
+
+        :returns: The task count.
+        """
+        return len(self.tasks)
+
     def process_tasks(self) -> None:
         """
         Process the tasks.
@@ -222,7 +238,7 @@ class Tasks:
 
         log.debug(f"MV: {src} => {dst}")
 
-        task = Task("move", "file", path=src, dest=dst)
+        task = Task("move", "file", source=src, dest=dst)
         self.tasks.append(task)
         # FIXME: GNU Stow: do we need this for anything?
         # self.mv_task_for[src] = task

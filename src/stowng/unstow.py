@@ -211,7 +211,7 @@ class Unstow:
             if os.path.exists(existing_path):
                 if existing_path == path:
                     self._tasks.do_unlink(target)
-                elif self._override(target):
+                elif self._filesystem.override(target):
                     log.debug(f"--- overriding installation of: {target}")
                     self._tasks.do_unlink(target)
             else:

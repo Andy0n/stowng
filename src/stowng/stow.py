@@ -165,9 +165,9 @@ class Stow:
             if self._filesystem.is_a_node(existing_path):
                 if existing_source == source:
                     log.debug(f"--- Skipping {target} as it already points to {source}")
-                elif self._defer(target):
+                elif self._filesystem.defer(target):
                     log.debug(f"--- Deferring installation of: {target}")
-                elif self._override(target):
+                elif self._filesystem.override(target):
                     log.debug(f"--- Overriding installation of: {target}")
                     self._tasks.do_unlink(target)
                     self._tasks.do_link(source, target)

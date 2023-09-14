@@ -40,4 +40,5 @@ class Task:
             if self.type_ == "file":
                 shutil.move(self.source, self.dest)
 
-        internal_error(f"bad task action: {self.action}")
+        else:
+            internal_error(f"bad task action: {self.action}")

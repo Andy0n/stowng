@@ -2,7 +2,7 @@
 import argparse
 import re
 import os
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Tuple
 
 from . import __version__
 
@@ -128,7 +128,7 @@ def sanitize_path_options(options: Dict) -> Dict:
     return options
 
 
-def parse_options(arguments: Optional[List[str]] = None) -> Tuple[Dict, List, List]:
+def parse_arguments(arguments: List[str], ignore_pkgs: bool) -> Tuple[Dict, List, List]:
     """
     Parse command line options and arguments.
 
@@ -249,13 +249,11 @@ def parse_options(arguments: Optional[List[str]] = None) -> Tuple[Dict, List, Li
     )
     parser.add_argument("packages", metavar="PACKAGE", action="append", nargs="*")
 
-    if arguments == None:
-        args = parser.parse_args()
+    args = parser.parse_args(arguments)
 
+    if not ignore_pkgs:
         if not (args.stow or args.delete or args.restow or any(args.packages)):
             parser.error("no packages to stow or unstow")
-    else:
-        args = parser.parse_args(arguments)
 
     if args.verbose:
         try:
@@ -317,7 +315,7 @@ def get_config_file_options() -> Tuple[Dict, List, List]:
                 for line in f:
                     args += line.strip().split(" ")
 
-                o, d, s = parse_options(args)
+                o, d, s = parse_arguments(args, True)
 
                 if not options:
                     options.update(o)
@@ -330,7 +328,7 @@ def get_config_file_options() -> Tuple[Dict, List, List]:
     return options, delete, stow
 
 
-def process_options():
+def process_options(args: List[str]):
     """
     Process command line options and arguments.
     Preference: command line > local config file > user config file > defaults.
@@ -340,7 +338,7 @@ def process_options():
 
     .. todo:: Check if this is 100% compatible with GNU Stow.
     """
-    options, delete, stow = parse_options()
+    options, delete, stow = parse_arguments(args, False)
     rc_options, _, _ = get_config_file_options()
 
     for opt in options:
@@ -348,6 +346,7 @@ def process_options():
             options[opt] = rc_options[opt]
 
     options = sanitize_path_options(options)
+    print(options)
     # no check, since already checked in parse_options()
 
     return options, delete, stow
