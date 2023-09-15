@@ -1,7 +1,7 @@
 import os
 import re
 import logging
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 from importlib.resources import files
 
 from .utils import join
@@ -11,8 +11,8 @@ log = logging.getLogger(__name__)
 
 
 class Ignore:
-    def __init__(self, ignore: List[re.Pattern]) -> None:
-        self._ignore = ignore
+    def __init__(self, ignore: Optional[List[re.Pattern]]) -> None:
+        self._ignore = ignore if ignore is not None else []
         self.ignore_file_regexps = {}
         self.default_global_ignore_regexps = self._get_default_global_ignore_regexps()
 
@@ -28,8 +28,8 @@ class Ignore:
         """
 
         if len(target) < 1:
-            log.error(f"::ignore() called with empty target")
-            raise Exception(f"::ignore() called with empty target")
+            log.error("::ignore() called with empty target")
+            raise Exception("::ignore() called with empty target")
 
         for suffix in self._ignore:
             if suffix.match(target):

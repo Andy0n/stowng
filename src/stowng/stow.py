@@ -46,10 +46,12 @@ class Stow:
 
             if not os.path.isdir(path):
                 log.error(
-                    f"The stow directory {self._stow_path} does not contain a package named {package}"
+                    f"The stow directory {self._stow_path} does not contain a package"
+                    f" named {package}"
                 )
                 raise Exception(
-                    f"The stow directory {self._stow_path} does not contain a package named {package}"
+                    f"The stow directory {self._stow_path} does not contain a package"
+                    f" named {package}"
                 )
 
             log.debug(f"Planning stow of package {package}...")
@@ -177,7 +179,8 @@ class Stow:
                     )
                 ) and self._filesystem.is_a_dir(join(os.path.dirname(target), source)):
                     log.debug(
-                        f"--- Unfolding {target} which was already owned by {existing_package}"
+                        f"--- Unfolding {target} which was already owned by"
+                        f" {existing_package}"
                     )
                     self._tasks.do_unlink(target)
                     self._tasks.do_mkdir(target)
@@ -197,7 +200,8 @@ class Stow:
                     self._tasks.conflict(
                         "stow",
                         package,
-                        f"existing target is stowed to a different package: {target} => {existing_source}",
+                        f"existing target is stowed to a different package: {target} =>"
+                        f" {existing_source}",
                     )
             else:
                 log.debug(f"--- replacing invalid link: {path}")

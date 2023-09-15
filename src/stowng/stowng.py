@@ -61,7 +61,7 @@ def main(arguments: List[str]):
             raise Exception("conflicts detected")
         else:
             if options["simulate"]:
-                log.info(f"WARNING: in simulation mode so not modifying filesystem.")
+                log.info("WARNING: in simulation mode so not modifying filesystem.")
                 return
 
             farmer.process_tasks()

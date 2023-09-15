@@ -54,13 +54,13 @@ class Tasks:
         """
         Process the tasks.
         """
-        log.debug(f"Processing tasks...")
+        log.debug("Processing tasks...")
 
         for task in self.tasks:
             if task.action != "skip":
                 task.process()
 
-        log.debug(f"Processing tasks... done")
+        log.debug("Processing tasks... done")
 
     def do_link(self, oldfile: str, newfile: str) -> None:
         """
@@ -75,7 +75,8 @@ class Tasks:
             if task_ref.action == "create":
                 if task_ref.type_ == "dir":
                     internal_error(
-                        f"new link ({newfile} => {oldfile}) clashes with planned new directory"
+                        f"new link ({newfile} => {oldfile}) clashes with planned new"
+                        " directory"
                     )
             elif task_ref.action == "remove":
                 pass  # TODO: see GNU Stow
@@ -88,7 +89,8 @@ class Tasks:
             if task_ref.action == "create":
                 if task_ref.source == oldfile:
                     internal_error(
-                        f"new link clashes with planned new link: {task_ref.path} => {task_ref.source}"
+                        f"new link clashes with planned new link: {task_ref.path} =>"
+                        f" {task_ref.source}"
                     )
                 else:
                     log.debug(
@@ -131,7 +133,8 @@ class Tasks:
 
         if file in self.dir_task_for and self.dir_task_for[file].action == "create":
             internal_error(
-                f"new unlink operation clashes with planned operation: {self.dir_task_for[file].action} dir {file}"
+                "new unlink operation clashes with planned operation:"
+                f" {self.dir_task_for[file].action} dir {file}"
             )
 
         log.debug(f"UNLINK: {file}")
@@ -158,7 +161,8 @@ class Tasks:
             if task_ref.action == "create":
                 if task_ref.type_ == "link":
                     internal_error(
-                        f"new dir clashes with planned new link ({task_ref.path} => {task_ref.source})"
+                        f"new dir clashes with planned new link ({task_ref.path} =>"
+                        f" {task_ref.source})"
                     )
             elif task_ref.action == "remove":
                 pass  # TODO: see GNU Stow
@@ -193,7 +197,8 @@ class Tasks:
         if dir in self.link_task_for:
             task_ref = self.link_task_for[dir]
             internal_error(
-                f"rmdir clashes with planned operation: {task_ref.action} link {task_ref.path} => {task_ref.source}"
+                f"rmdir clashes with planned operation: {task_ref.action} link"
+                f" {task_ref.path} => {task_ref.source}"
             )
 
         if dir in self.dir_task_for:
@@ -204,9 +209,9 @@ class Tasks:
                 return
             elif task_ref.action == "create":
                 log.debug(f"RMDIR: {dir} (reverts previous action)")
-                self.dir_task_for[
-                    dir
-                ].action = "skip"  # NOTE: GNU Stow has link_task_for here
+                self.dir_task_for[dir].action = (
+                    "skip"  # NOTE: GNU Stow has link_task_for here
+                )
                 self.dir_task_for.pop(dir)
                 return
             else:
@@ -228,7 +233,8 @@ class Tasks:
             # NOTE: GNU Stow: Should not ever happen, but not 100% sure
             task_ref = self.link_task_for[src]
             internal_error(
-                f"do_mv: pre-existing link task for {src}; action: {task_ref.action}; source: {task_ref.source}"
+                f"do_mv: pre-existing link task for {src}; action: {task_ref.action};"
+                f" source: {task_ref.source}"
             )
         elif src in self.dir_task_for:
             task_ref = self.dir_task_for[src]
@@ -333,7 +339,8 @@ class Tasks:
                 and self.link_task_for[prefix].action == "remove"
             ):
                 log.debug(
-                    f"    parent_link_scheduled_for_removal({path}): link scheduled for removal"
+                    f"    parent_link_scheduled_for_removal({path}): link scheduled for"
+                    " removal"
                 )
                 return True
 
@@ -357,7 +364,7 @@ class Tasks:
         for node in os.listdir(dir):
             node_path = join(dir, node)
 
-            if os.path.islink(node_path) and not node_path in self.link_task_for:
+            if os.path.islink(node_path) and node_path not in self.link_task_for:
                 source = self.read_a_link(node_path)
 
                 if source is None:
@@ -382,7 +389,6 @@ class Tasks:
         """
 
         log.debug(f"CONFLICT when {action}ing {package}: {message}")
-        # self.conflicts.append({"action": action, "package": package, "message": message})
         if action not in self.conflicts:
             self.conflicts[action] = {}
         if package not in self.conflicts[action]:

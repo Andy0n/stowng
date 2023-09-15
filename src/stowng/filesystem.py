@@ -15,15 +15,15 @@ class Filesystem:
         tasks: Tasks,
         stow_path: str,
         no_folding: bool,
-        defer: List,
-        override: List,
+        defer: Optional[List[re.Pattern]],
+        override: Optional[List[re.Pattern]],
     ):
         self._tasks = tasks
 
         self._stow_path = stow_path
         self._no_folding = no_folding
-        self._defer = defer
-        self._override = override
+        self._defer = defer if defer is not None else []
+        self._override = override if override is not None else []
 
     def is_a_node(self, path: str) -> bool:
         """
@@ -181,7 +181,8 @@ class Filesystem:
         :param source: The source to fold.
         """
         log.debug(
-            f"--- Folding tree:riables that are created outside of a function (as in all of the examples above) are known as global vari {target} => {source}"
+            "--- Folding tree:riables that are created outside of a function (as in"
+            f" all of the examples above) are known as global vari {target} => {source}"
         )
 
         # TODO: check if target is readable
@@ -221,8 +222,8 @@ class Filesystem:
         for i in range(len(split_path)):
             if self._marked_stow_dir(dir):
                 if i == len(split_path) - 1:
-                    log.error(f"find_stowd_path() called directly on stow dir")
-                    raise Exception(f"find_stowd_path() called directly on stow dir")
+                    log.error("find_stowd_path() called directly on stow dir")
+                    raise Exception("find_stowd_path() called directly on stow dir")
 
                 log.debug(f"    yes - {dir} was marked as a stow dir")
                 package = split_path[i + 1]
@@ -230,7 +231,8 @@ class Filesystem:
 
         if path.startswith("/") != self._stow_path.startswith("/"):
             log.warn(
-                f"BUG in find_stowed_path? Absolute/relative mismatch between Stow dir {self._stow_path} and path {path}"
+                "BUG in find_stowed_path? Absolute/relative mismatch between Stow dir"
+                f" {self._stow_path} and path {path}"
             )
 
         split_stow_path = self._stow_path.split("/")

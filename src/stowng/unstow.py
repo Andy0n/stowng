@@ -46,10 +46,12 @@ class Unstow:
 
             if not os.path.isdir(path):
                 log.error(
-                    f"The stow directory {self._stow_path} does not contain package {package}"
+                    f"The stow directory {self._stow_path} does not contain package"
+                    f" {package}"
                 )
                 raise Exception(
-                    f"the stow directory {self._stow_path} does not contain package {package}"
+                    f"the stow directory {self._stow_path} does not contain package"
+                    f" {package}"
                 )
 
             log.debug(f"Planning unstow of package {package}...")
@@ -74,7 +76,9 @@ class Unstow:
             return
 
         cwd = os.getcwd()
-        msg = f"Unstowing from {target} (cwd={cwd}, stow dir={stow_path})"  # NOTE: GNU Stow: uses self.stow_path here
+        msg = (  # NOTE: GNU Stow: uses self.stow_path here
+            f"Unstowing from {target} (cwd={cwd}, stow dir={stow_path})"
+        )
         msg = msg.replace(f"{os.environ['HOME']}/", "~/")
 
         log.debug(msg)
@@ -144,7 +148,8 @@ class Unstow:
                 self._tasks.conflict(
                     "unstow",
                     package,
-                    f"existing target is not owned by stow: {target} => {existing_source}",
+                    f"existing target is not owned by stow: {target} =>"
+                    f" {existing_source}",
                 )
                 return
 

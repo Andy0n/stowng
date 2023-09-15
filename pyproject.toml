@@ -37,3 +37,17 @@ where = ["src"]
 
 [tool.setuptools.package-data]
 "stowng.data" = ["*"]
+
+[tool.pytest.ini_options]
+pythonpath = "src"
+addopts = [
+    "--doctest-modules",
+    "--doctest-continue-on-failure",
+]
+testpaths = [
+    "src",
+    "tests",
+]
+
+[tool.black]
+

@@ -133,7 +133,7 @@ def parse_arguments(arguments: List[str], ignore_pkgs: bool) -> Tuple[Dict, List
     Parse command line options and arguments.
 
     :param arguments: The command line arguments.
-    :return: A tuple containing the options dictionary, the list of packages to delete, and the list of packages to stow.
+    :return: A tuple the options, the packages to delete and to stow.
 
     .. todo:: Python vs Perl regexes
     .. todo:: make 100% compatible with GNU Stow; e.g. -v before package
@@ -168,18 +168,27 @@ def parse_arguments(arguments: List[str], ignore_pkgs: bool) -> Tuple[Dict, List
         "--defer",
         metavar="REGEX",
         action="append",
-        help="don't stow files beginning with this Python regex if the file is already stowed to another package",
+        help=(
+            "don't stow files beginning with this Python regex if the file is already"
+            " stowed to another package"
+        ),
     )
     parser.add_argument(
         "--override",
         metavar="REGEX",
         action="append",
-        help="force stowing files beginning with this Python regex if the file is already stowed to another package",
+        help=(
+            "force stowing files beginning with this Python regex if the file is"
+            " already stowed to another package"
+        ),
     )
     parser.add_argument(
         "--adopt",
         action="store_true",
-        help="(Use with care!) Import existing files into stow package from target. Please read docs before using.",
+        help=(
+            "(Use with care!) Import existing files into stow package from target."
+            " Please read docs before using."
+        ),
     )
     parser.add_argument(
         "--no-folding",
@@ -216,7 +225,10 @@ def parse_arguments(arguments: List[str], ignore_pkgs: bool) -> Tuple[Dict, List
         "--verbose",
         metavar="N",
         action="append",
-        help="increase verbosity (levels are from 0 to 5; -v or --verbose adds 1; --verbose=N sets level)",
+        help=(
+            "increase verbosity (levels are from 0 to 5; -v or --verbose adds 1;"
+            " --verbose=N sets level)"
+        ),
         nargs="?",
         const="1",
     )
@@ -299,7 +311,7 @@ def get_config_file_options() -> Tuple[Dict, List, List]:
     """
     Get options from config files.
 
-    :return: A tuple containing the options dictionary, the list of packages to delete, and the list of packages to stow.
+    :return: A tuple the options, the packages to delete and to stow.
     """
     options = {}
     stow = []
@@ -334,7 +346,7 @@ def process_options(args: List[str]):
     Preference: command line > local config file > user config file > defaults.
         If boolean option is specified in any config file, it is set to True.
 
-    :return: A tuple containing the options dictionary, the list of packages to delete, and the list of packages to stow.
+    :return: A tuple the options, the packages to delete and to stow.
 
     .. todo:: Check if this is 100% compatible with GNU Stow.
     """

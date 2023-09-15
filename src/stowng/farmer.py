@@ -3,7 +3,7 @@
 import os
 import re
 import logging
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from .stow import Stow
 from .unstow import Unstow
@@ -19,9 +19,9 @@ class Farmer:
         self,
         dir: str,
         target: str,
-        ignore: List[re.Pattern] = [],
-        defer: List[re.Pattern] = [],
-        override: List[re.Pattern] = [],
+        ignore: Optional[List[re.Pattern]] = None,
+        defer: Optional[List[re.Pattern]] = None,
+        override: Optional[List[re.Pattern]] = None,
         adopt: bool = False,
         compat: bool = False,
         simulate: bool = False,

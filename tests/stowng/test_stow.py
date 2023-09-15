@@ -1,7 +1,7 @@
 import pytest
 from stowng.farmer import Farmer
 
-from .utils import (
+from utils import (
     cat_file,
     dir_exists,
     link_exists,
@@ -15,7 +15,8 @@ from .utils import (
     make_file,
     readlink,
 )
-from . import TEST_DIR
+
+TEST_DIR = "stowng_test"
 
 
 @pytest.fixture(autouse=True)
@@ -97,7 +98,8 @@ def test_conflict_with_file():
 
 
 def test_conflict_with_file_adopt():
-    # appears to have same behaviour as upstream, since adopt=True is commented out as well
+    # appears to have same behaviour as upstream, since adopt=True is commented
+    # out as well
     # farmer = Farmer(dir="../stow", target=".", test_mode=True, adopt=True)
     farmer = Farmer(dir="../stow", target=".", test_mode=True, adopt=False)
 
